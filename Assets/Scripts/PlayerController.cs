@@ -1,14 +1,21 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class PlayerController : MonoBehaviour {
+public class PlayerController : NetworkBehaviour {
 
+    [Tooltip("Child object of weapon/pointer")]
+    public GameObject aimBaseChildObject;
+
+    [Tooltip("Base movement speed")]
     public float baseMoveSpeed = 3.0f;
+    [Tooltip("Maximum acceleration")]
     public float maxVelocityChange = 0.5f;
 
+    [Tooltip("Base Look speed (degrees)")]
     public float baseAimSpeed = 7.0f;
-    public GameObject aimChildObject;
+    [Tooltip("Degrees offset from positive z-direction")]
     public float aimAngleOffset = -90;
 
     private Rigidbody2D rb;
@@ -25,6 +32,11 @@ public class PlayerController : MonoBehaviour {
 	
 	void Update ()
     {
+        if(!isLocalPlayer)
+        {
+            return;
+        }
+
         /* Input */
         targetVelocity.x = Input.GetAxis("Horizontal");
         targetVelocity.y = Input.GetAxis("Vertical");
@@ -57,8 +69,8 @@ public class PlayerController : MonoBehaviour {
             Quaternion targetRotation = Quaternion.AngleAxis(targetAngle, Vector3.forward);
 
             // Apply rotation with slerp to aim object
-            aimChildObject.transform.rotation = Quaternion.Slerp(
-                aimChildObject.transform.rotation, targetRotation, Time.deltaTime * baseAimSpeed);
+            aimBaseChildObject.transform.rotation = Quaternion.Slerp(
+                aimBaseChildObject.transform.rotation, targetRotation, Time.deltaTime * baseAimSpeed);
         }
 
         // TODO: Set aim to move direction if not aiming
