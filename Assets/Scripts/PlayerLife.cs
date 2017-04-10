@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Networking;
 
 public class PlayerLife : NetworkBehaviour
@@ -27,6 +28,21 @@ public class PlayerLife : NetworkBehaviour
     private bool isShieldDamaged;
     private float timeShieldUndamaged;
 
+    public string textHealthUI = "TextHealth";
+    public string textShieldUI = "TextShield";
+    private Text textHealth;
+    private Text textShield;
+
+    void Awake()
+    {
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if(canvas != null)
+        {
+            textHealth = canvas.transform.Find(textHealthUI).GetComponent<Text>();
+            textShield = canvas.transform.Find(textShieldUI).GetComponent<Text>();
+        }
+    }
+
     void Start()
     {
         health = maxHealth;
@@ -40,8 +56,17 @@ public class PlayerLife : NetworkBehaviour
 
     void Update()
     {
+        /*if(isHealthDamaged || isShieldDamaged)
+        {
+            Debug.Log(this.transform.name + " has " +
+            shield.ToString("F2") + " shield and " +
+            health.ToString("F2") + " health.");
+        }*/
+        textHealth.text = "Health: " + health.ToString("F2");
+        textShield.text = "Sheild: " + shield.ToString("F2");
+
         /* Health recovery */
-        if(isHealthDamaged)
+        if (isHealthDamaged)
         {
             if(timeHealthUndamaged >= healthRecoveryDelay)
             {
@@ -72,10 +97,13 @@ public class PlayerLife : NetworkBehaviour
         }
     }
 
-    public void receiveDamage(float damage)
+    [Command]
+    public void Cmd_applyDamage(float damage)
     {
         /* Ignore damage of 0.0 or less */
         if(damage <= 0.0f) { return; }
+
+        Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");
 
         /* Apply damage to shield */
         shield -= damage;
@@ -88,14 +116,16 @@ public class PlayerLife : NetworkBehaviour
         }
         else{ damage = 0.0f; }
 
-        /* Ignore damage of 0.0 or less */
+        /* Ignore remaining damage of 0.0 or less */
         if (damage <= 0.0f) { return; }
 
         /* Apply remaining damage to health */
         health -= damage;
         isHealthDamaged = true;
         timeHealthUndamaged = 0.0f;
-        if (health < 0)
+
+        /* Player has less than 0.1 health */
+        if (health < +0.1f)
         {
             health = 0.0f;
             handleDeath();

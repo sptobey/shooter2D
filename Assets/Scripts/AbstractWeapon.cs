@@ -12,7 +12,8 @@ public abstract class AbstractWeapon : MonoBehaviour
     public abstract int   magazineSize            { get; }
     public abstract float reloadSpeed             { get; }
 
-    public abstract bool isAutomatic { get; }
+    public abstract bool isAutomatic    { get; }
+    public abstract float fireThreshold { get; }
 
     public abstract float hipMinRange         { get; }
     public abstract float hipMaxRange         { get; }
@@ -26,4 +27,6 @@ public abstract class AbstractWeapon : MonoBehaviour
     public abstract float adsRecoil           { get; }
     public abstract float adsAccuracyRecovery { get; }
 
+    // Eqiup time
+    // get/set remaining bullets
 }

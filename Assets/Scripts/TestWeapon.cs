@@ -12,7 +12,8 @@ public class TestWeapon : AbstractWeapon
     public override int   magazineSize            { get { return 8; } }
     public override float reloadSpeed             { get { return 3.0f; } }
 
-    public override bool isAutomatic { get { return true; } }
+    public override bool isAutomatic    { get { return true; } }
+    public override float fireThreshold { get { return -0.80f; } }
 
     public override float hipMinRange         { get { return 5.0f; } }
     public override float hipMaxRange         { get { return 15.0f; } }
