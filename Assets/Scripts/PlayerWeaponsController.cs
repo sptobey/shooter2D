@@ -11,6 +11,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
     public LayerMask shootableLayers;
     public Transform fireLocation;
     public Transform playerCenter;
+
+    public GameObject bulletPrefab;
+    public float bulletSpeed = 100.0f;
+    public float bulletLifetime = 0.5f;
     
     [Tooltip("Hit penetration depth"), Range(1,5)]
     public int maxHits = 5;
@@ -55,11 +59,12 @@ public class PlayerWeaponsController : NetworkBehaviour {
                 fireButtonInput = +1.0f;
                 //Debug.Log("R2 Button: " + fireButtonInput);
             }
-            else { fireButtonInput = -1.0f; }               
+            else { fireButtonInput = -1.0f; }
         }
 
         /* Fire weapon */
-        if (fireButtonInput >= equippedWeapon.fireThreshold)
+        if (fireButtonInput >= equippedWeapon.fireThreshold
+            && isLocalPlayer)
         {
             /* Fire rate enforced, not reloading, has ammunition */
             if (timerRateOfFire <= 0.0f &&
@@ -92,6 +97,14 @@ public class PlayerWeaponsController : NetworkBehaviour {
     [Command]
     private void Cmd_fireWeapon()
     {
+        /* Bullet prefab */
+        GameObject bullet = Instantiate(
+            bulletPrefab, fireLocation.position, fireLocation.rotation);
+        bullet.GetComponent<Rigidbody2D>().velocity = bullet.transform.up * bulletSpeed;
+        /* Spawn the bullet on the Clients */
+        NetworkServer.Spawn(bullet);
+        Destroy(bullet, bulletLifetime);
+
         /* Raycast */
         aimDirection = (fireLocation.position - playerCenter.position);
         aimDirection.Normalize();
@@ -108,7 +121,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
             {
                 Debug.Log("Hit: " + hit.collider.name);
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
-                if (opponentLife)
+                if (opponentLife != null)
                 {
                     float damage = 0.0f;
                     float distance = (this.transform.position - hit.transform.position).magnitude;
@@ -123,9 +136,9 @@ public class PlayerWeaponsController : NetworkBehaviour {
                     else
                     {
                         float lerp = Mathf.Clamp(
-                        (distance - equippedWeapon.hipMinRange) /
-                        (equippedWeapon.hipMaxRange - equippedWeapon.hipMinRange),
-                        0.0f, 1.0f);
+                            (distance - equippedWeapon.hipMinRange) /
+                            (equippedWeapon.hipMaxRange - equippedWeapon.hipMinRange),
+                            0.0f, 1.0f);
                         damage = Mathf.Lerp(equippedWeapon.roundMaxDamage, equippedWeapon.roundMinDamage, lerp);
                     }
                     opponentLife.Cmd_applyDamage(damage);

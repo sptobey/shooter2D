@@ -10,7 +10,7 @@ public class TestWeapon : AbstractWeapon
     public override float roundMinPrecisionDamage { get { return 75.0f; } }
     public override float roundsPerSecond         { get { return 5.0f; } }
     public override int   magazineSize            { get { return 8; } }
-    public override float reloadSpeed             { get { return 3.0f; } }
+    public override float reloadSpeed             { get { return 2.5f; } }
 
     public override bool isAutomatic    { get { return true; } }
     public override float fireThreshold { get { return -0.80f; } }

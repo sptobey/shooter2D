@@ -28,20 +28,10 @@ public class PlayerLife : NetworkBehaviour
     private bool isShieldDamaged;
     private float timeShieldUndamaged;
 
-    public string textHealthUI = "TextHealth";
-    public string textShieldUI = "TextShield";
-    private Text textHealth;
-    private Text textShield;
-
-    void Awake()
-    {
-        Canvas canvas = FindObjectOfType<Canvas>();
-        if(canvas != null)
-        {
-            textHealth = canvas.transform.Find(textHealthUI).GetComponent<Text>();
-            textShield = canvas.transform.Find(textShieldUI).GetComponent<Text>();
-        }
-    }
+    public RectTransform healthBar;
+    public RectTransform shieldBar;
+    public Text textHealth;
+    public Text textSheild;
 
     void Start()
     {
@@ -62,8 +52,17 @@ public class PlayerLife : NetworkBehaviour
             shield.ToString("F2") + " shield and " +
             health.ToString("F2") + " health.");
         }*/
-        textHealth.text = "Health: " + health.ToString("F2");
-        textShield.text = "Sheild: " + shield.ToString("F2");
+
+        healthBar.sizeDelta = new Vector2(
+            (health / maxHealth) * 100,
+            healthBar.sizeDelta.y);
+
+        shieldBar.sizeDelta = new Vector2(
+            (shield / maxShield) * 100,
+            shieldBar.sizeDelta.y);
+
+        textHealth.text = health.ToString("F0");
+        textSheild.text = shield.ToString("F0");
 
         /* Health recovery */
         if (isHealthDamaged)
@@ -124,8 +123,8 @@ public class PlayerLife : NetworkBehaviour
         isHealthDamaged = true;
         timeHealthUndamaged = 0.0f;
 
-        /* Player has less than 0.1 health */
-        if (health < +0.1f)
+        /* Player has less than 0.5 health */
+        if (health < +0.5f)
         {
             health = 0.0f;
             handleDeath();
