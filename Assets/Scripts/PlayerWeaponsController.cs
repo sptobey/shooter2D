@@ -5,9 +5,6 @@ using UnityEngine.Networking;
 
 public class PlayerWeaponsController : NetworkBehaviour {
 
-    public AbstractWeapon primaryWeaopn;
-    public AbstractWeapon secondaryWeaopn;
-
     public LayerMask shootableLayers;
     public Transform fireLocation;
     public Transform playerCenter;
@@ -25,29 +22,26 @@ public class PlayerWeaponsController : NetworkBehaviour {
     private float fireButtonInput;
     private Vector2 aimDirection;
 
-    private AbstractWeapon equippedWeapon;
-    private float fireTime;
-    private float timerRateOfFire;
-    private int ammunition;
-    private float timerReloading;
+    private bool waitingForFire;
+    private bool waitingForReload;
+    private bool waitingForEquip;
+
+    private PlayerWeapons playerWeapons;
 
     void Start ()
     {
-        equipWeapon(primaryWeaopn);
+        playerWeapons = GetComponent<PlayerWeapons>();
+        playerWeapons.equipWeapon("Primary");
+
+        waitingForFire = false;
+        waitingForReload = false;
+        waitingForEquip = false;
     }
-	
-	void Update ()
+
+    void Update ()
     {
-        /* Update fire-rate timer */
-        if (timerRateOfFire >= 0.0f) { timerRateOfFire -= Time.deltaTime; }
-        //Debug.Log("Fire Timer: " + timerRateOfFire);
-
-        /* Update reload timer */
-        if (timerReloading >= 0.0f) { timerReloading -= Time.deltaTime; }
-        //Debug.Log("Reload Timer: " + timerReloading);
-
         /* Input */
-        if (equippedWeapon.isAutomatic)
+        if (playerWeapons.EquippedWeapon.isAutomatic)
         {
             fireButtonInput = Input.GetAxis("R2_Axis");
             //Debug.Log("R2 Automatic Trigger: " + fireButtonInput);
@@ -62,36 +56,69 @@ public class PlayerWeaponsController : NetworkBehaviour {
             else { fireButtonInput = -1.0f; }
         }
 
+        Debug.Log("Firing: " + waitingForFire +
+                ", Reloading: " + waitingForReload +
+                ", Equipping: " + waitingForEquip +
+                ", Magazine: " + playerWeapons.roundsInMagazine());
+
         /* Fire weapon */
-        if (fireButtonInput >= equippedWeapon.fireThreshold
+        if (fireButtonInput >= playerWeapons.EquippedWeapon.fireThreshold
             && isLocalPlayer)
         {
             /* Fire rate enforced, not reloading, has ammunition */
-            if (timerRateOfFire <= 0.0f &&
-                timerReloading <= 0.0f &&
-                ammunition >= 1)
+            if (!waitingForFire &&
+                !waitingForReload &&
+                !waitingForEquip &&
+                playerWeapons.roundsInMagazine() >= 1)
             {
-                Cmd_fireWeapon();
-                timerRateOfFire = fireTime;
+                StartCoroutine(handleFireWeapon());
             }          
         }
     }
 
-    private void equipWeapon(AbstractWeapon weapon)
+    private IEnumerator handleFireWeapon()
     {
-        equippedWeapon = weapon;
-        fireTime = 1.0f / weapon.roundsPerSecond;
-        /* Weapon is ready to fire 
-         * TODO: add weapon equip time and fire delay */
-        timerRateOfFire = 0.0f;
-        ammunition = weapon.magazineSize;
-        timerReloading = 0.0f;
+        float fireTime = (1 / playerWeapons.EquippedWeapon.roundsPerSecond);
+        waitingForFire = true;
+
+        yield return new WaitForSeconds(fireTime);
+        Cmd_fireWeapon();
+        waitingForFire = false;
     }
 
-    private void reloadWeapon()
+    private IEnumerator handleReloadWeapon()
     {
-        ammunition = equippedWeapon.magazineSize;
-        timerReloading = equippedWeapon.reloadSpeed;
+        float reloadTime = playerWeapons.EquippedWeapon.reloadSpeed;
+        waitingForReload = true;
+
+        yield return new WaitForSeconds(reloadTime);
+        playerWeapons.reloadWeapon();
+        waitingForReload = false;
+    }
+
+    private IEnumerator handleEquipWeapon(string slot)
+    {
+        float equipTime = 0.0f;
+        switch (slot)
+        {
+            case "Primary":
+                equipTime = playerWeapons.primaryWeapon.equipTime;
+                break;
+            case "Secondary":
+                equipTime = playerWeapons.secondaryWeapon.equipTime;
+                break;
+            case "Tertiary":
+                equipTime = playerWeapons.tertiaryWeapon.equipTime;
+                break;
+            default:
+                equipTime = 0.0f;
+                break;
+        }
+        waitingForEquip = true;
+
+        yield return new WaitForSeconds(equipTime);
+        playerWeapons.equipWeapon(slot);
+        waitingForEquip = false;
     }
 
     [Command]
@@ -125,21 +152,21 @@ public class PlayerWeaponsController : NetworkBehaviour {
                 {
                     float damage = 0.0f;
                     float distance = (this.transform.position - hit.transform.position).magnitude;
-                    if (distance <= equippedWeapon.hipMinRange)
+                    if (distance <= playerWeapons.EquippedWeapon.hipMinRange)
                     {
-                        damage = equippedWeapon.roundMaxDamage;
+                        damage = playerWeapons.EquippedWeapon.roundMaxDamage;
                     }
-                    else if(distance >= equippedWeapon.hipMaxRange)
+                    else if(distance >= playerWeapons.EquippedWeapon.hipMaxRange)
                     {
-                        damage = equippedWeapon.roundMinDamage;
+                        damage = playerWeapons.EquippedWeapon.roundMinDamage;
                     }
                     else
                     {
                         float lerp = Mathf.Clamp(
-                            (distance - equippedWeapon.hipMinRange) /
-                            (equippedWeapon.hipMaxRange - equippedWeapon.hipMinRange),
+                            (distance - playerWeapons.EquippedWeapon.hipMinRange) /
+                            (playerWeapons.EquippedWeapon.hipMaxRange - playerWeapons.EquippedWeapon.hipMinRange),
                             0.0f, 1.0f);
-                        damage = Mathf.Lerp(equippedWeapon.roundMaxDamage, equippedWeapon.roundMinDamage, lerp);
+                        damage = Mathf.Lerp(playerWeapons.EquippedWeapon.roundMaxDamage, playerWeapons.EquippedWeapon.roundMinDamage, lerp);
                     }
                     opponentLife.Cmd_applyDamage(damage);
                 }
@@ -151,10 +178,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
         /* Update weapon
          * TODO: recoil */
-        ammunition -= 1;
-        if (ammunition <= 0)
+        playerWeapons.decrementMagazine(1);
+        if (playerWeapons.roundsInMagazine() <= 0)
         {
-            reloadWeapon();
+            StartCoroutine(handleReloadWeapon());
         }
     } /* Cmd_fireWeapon() */
 }

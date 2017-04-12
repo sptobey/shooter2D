@@ -205,6 +205,7 @@ GameObject:
   - component: {fileID: 114543107006270304}
   - component: {fileID: 114383281720550924}
   - component: {fileID: 114236446841905784}
+  - component: {fileID: 114721748015316506}
   - component: {fileID: 114086248705330440}
   - component: {fileID: 114074036750018404}
   - component: {fileID: 50967237256121484}
@@ -387,6 +388,8 @@ MonoBehaviour:
   maxShield: 95
   shieldRecoveryRate: 30
   shieldRecoveryDelay: 3
+  currentHealth: 0
+  currentShield: 0
   healthBar: {fileID: 224681055787049670}
   shieldBar: {fileID: 224954251015332672}
   textHealth: {fileID: 114720547697462526}
@@ -429,8 +432,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 416e5d6338e3ed1458d5585539861dc1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  primaryWeaopn: {fileID: 114388197007128802}
-  secondaryWeaopn: {fileID: 114388197007128802}
   shootableLayers:
     serializedVersion: 2
     m_Bits: 768
@@ -629,6 +630,20 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: 95
+--- !u!114 &114721748015316506
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1932744399151556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0497eed431f47bb43943ceae3c83d787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  primaryWeapon: {fileID: 114388197007128802}
+  secondaryWeapon: {fileID: 114388197007128802}
+  tertiaryWeapon: {fileID: 114388197007128802}
 --- !u!114 &114797248283078280
 MonoBehaviour:
   m_ObjectHideFlags: 1

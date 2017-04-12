@@ -27,6 +27,9 @@ public abstract class AbstractWeapon : MonoBehaviour
     public abstract float adsRecoil           { get; }
     public abstract float adsAccuracyRecovery { get; }
 
-    // Eqiup time
-    // get/set remaining bullets
+    public abstract string slot { get; }
+    public abstract string type { get; }
+    public abstract int ammunitionCapacity { get; }
+    public abstract float equipTime { get; }
+    public abstract float adsTime { get; }
 }

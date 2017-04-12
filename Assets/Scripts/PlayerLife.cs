@@ -20,11 +20,13 @@ public class PlayerLife : NetworkBehaviour
     [Tooltip("Time to start recovering shield (seconds)")]
     public float shieldRecoveryDelay = 5.0f;
 
-    private float health;
+    [SyncVar]
+    public float currentHealth;
     private bool isHealthDamaged;
     private float timeHealthUndamaged;
 
-    private float shield;
+    [SyncVar]
+    public float currentShield;
     private bool isShieldDamaged;
     private float timeShieldUndamaged;
 
@@ -35,11 +37,11 @@ public class PlayerLife : NetworkBehaviour
 
     void Start()
     {
-        health = maxHealth;
+        currentHealth = maxHealth;
         isHealthDamaged = false;
         timeHealthUndamaged = float.PositiveInfinity;
 
-        shield = maxShield;
+        currentShield = maxShield;
         isShieldDamaged = false;
         timeShieldUndamaged = float.PositiveInfinity;
     }
@@ -53,26 +55,27 @@ public class PlayerLife : NetworkBehaviour
             health.ToString("F2") + " health.");
         }*/
 
+        /* Display health/shield */
         healthBar.sizeDelta = new Vector2(
-            (health / maxHealth) * 100,
+            (currentHealth / maxHealth) * 100,
             healthBar.sizeDelta.y);
 
         shieldBar.sizeDelta = new Vector2(
-            (shield / maxShield) * 100,
+            (currentShield / maxShield) * 100,
             shieldBar.sizeDelta.y);
 
-        textHealth.text = health.ToString("F0");
-        textSheild.text = shield.ToString("F0");
+        textHealth.text = currentHealth.ToString("F0");
+        textSheild.text = currentShield.ToString("F0");
 
         /* Health recovery */
         if (isHealthDamaged)
         {
             if(timeHealthUndamaged >= healthRecoveryDelay)
             {
-                health += healthRecoveryRate * Time.deltaTime;
-                if(health >= maxHealth)
+                currentHealth += healthRecoveryRate * Time.deltaTime;
+                if(currentHealth >= maxHealth)
                 {
-                    health = maxHealth;
+                    currentHealth = maxHealth;
                     isHealthDamaged = false;
                     timeHealthUndamaged = float.PositiveInfinity;
                 }
@@ -84,10 +87,10 @@ public class PlayerLife : NetworkBehaviour
         {
             if(timeShieldUndamaged >= shieldRecoveryDelay)
             {
-                shield += shieldRecoveryRate * Time.deltaTime;
-                if(shield >= maxShield)
+                currentShield += shieldRecoveryRate * Time.deltaTime;
+                if(currentShield >= maxShield)
                 {
-                    shield = maxShield;
+                    currentShield = maxShield;
                     isShieldDamaged = false;
                     timeShieldUndamaged = float.PositiveInfinity;
                 }
@@ -99,19 +102,22 @@ public class PlayerLife : NetworkBehaviour
     [Command]
     public void Cmd_applyDamage(float damage)
     {
+        /* Apply damage only on Server */
+        if (!isServer) { return; }
+
         /* Ignore damage of 0.0 or less */
         if(damage <= 0.0f) { return; }
 
         Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");
 
         /* Apply damage to shield */
-        shield -= damage;
+        currentShield -= damage;
         isShieldDamaged = true;
         timeShieldUndamaged = 0.0f;
-        if (shield < 0)
+        if (currentShield < 0)
         {
-            damage = Mathf.Abs(shield);
-            shield = 0.0f;
+            damage = Mathf.Abs(currentShield);
+            currentShield = 0.0f;
         }
         else{ damage = 0.0f; }
 
@@ -119,14 +125,14 @@ public class PlayerLife : NetworkBehaviour
         if (damage <= 0.0f) { return; }
 
         /* Apply remaining damage to health */
-        health -= damage;
+        currentHealth -= damage;
         isHealthDamaged = true;
         timeHealthUndamaged = 0.0f;
 
         /* Player has less than 0.5 health */
-        if (health < +0.5f)
+        if (currentHealth < +0.5f)
         {
-            health = 0.0f;
+            currentHealth = 0.0f;
             handleDeath();
         }
     }

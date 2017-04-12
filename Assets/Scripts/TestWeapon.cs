@@ -13,7 +13,7 @@ public class TestWeapon : AbstractWeapon
     public override float reloadSpeed             { get { return 2.5f; } }
 
     public override bool isAutomatic    { get { return true; } }
-    public override float fireThreshold { get { return -0.80f; } }
+    public override float fireThreshold { get { return 0.01f; } }
 
     public override float hipMinRange         { get { return 5.0f; } }
     public override float hipMaxRange         { get { return 15.0f; } }
@@ -26,4 +26,10 @@ public class TestWeapon : AbstractWeapon
     public override float adsAccuracy         { get { return 10.0f; } }
     public override float adsRecoil           { get { return 2.5f; } }
     public override float adsAccuracyRecovery { get { return 2.0f; } }
+
+    public override string slot { get { return "Primary"; } }
+    public override string type { get { return "Hand Cannon"; } }
+    public override int ammunitionCapacity { get { return 100;  } }
+    public override float equipTime { get  { return 1.5f; } }
+    public override float adsTime { get { return 0.5f; } }
 }
