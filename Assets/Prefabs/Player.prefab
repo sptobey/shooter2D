@@ -643,10 +643,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aimBaseChildObject: {fileID: 1407030196229208}
   baseMoveSpeed: 3
-  adsMoveSpeed: 1
+  adsMoveSpeed: 1.5
+  sprintMoveSpeed: 6
+  sprintTime: 4
   maxVelocityChange: 0.5
   baseAimSpeed: 7
-  adsAimSpeed: 2
+  adsAimSpeed: 1
+  sprintAimSpeed: 4
   aimAngleOffset: -90
   aimThreshold: 0.01
 --- !u!114 &114403061483768114

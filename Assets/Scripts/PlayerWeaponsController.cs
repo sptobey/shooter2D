@@ -223,7 +223,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
             playerWeapons.hipAimAngle() :
             playerWeapons.adsAimAngle();
         float aimAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) + (Mathf.Deg2Rad * inaccuracy);
-        Debug.Log("aim angle: " + aimAngle);
+        //Debug.Log("aim angle: " + aimAngle);
         aimDirection.x = Mathf.Cos(aimAngle);
         aimDirection.y = Mathf.Sin(aimAngle);
         aimDirection.Normalize();
@@ -252,7 +252,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
         {
             if (hit.collider != null)
             {
-                Debug.Log("Hit: " + hit.collider.name);
+                //Debug.Log("Hit: " + hit.collider.name);
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
                 if (opponentLife != null)
                 {

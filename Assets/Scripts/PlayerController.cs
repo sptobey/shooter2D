@@ -8,7 +8,8 @@ public class PlayerController : NetworkBehaviour {
     /* TODO: pull values from weapon properties that 
      * affect aim and move speed. 
      * Abstract all input to a separate class to be 
-     * used by all controller classes. */
+     * used by all controller classes.
+     * Disable sprint if firing. */
 
     [Tooltip("Child object of weapon/pointer")]
     public GameObject aimBaseChildObject;
@@ -86,7 +87,6 @@ public class PlayerController : NetworkBehaviour {
         }
         else if(!isSprintLocked && isSprinting)
         {
-            Debug.Log("sprint");
             moveSpeed = sprintMoveSpeed;
             aimSpeed = sprintAimSpeed;
             StartCoroutine(SprintLockTimer(sprintTime));
@@ -125,12 +125,23 @@ public class PlayerController : NetworkBehaviour {
                 aimBaseChildObject.transform.rotation, targetRotation, Time.deltaTime * aimSpeed);
         }
 
-        // TODO: Set aim to move direction if not aiming
-        //else
-        //{
-        //    targetDirection.x = Input.GetAxis("Horizontal");
-        //    targetDirection.y = Input.GetAxis("Vertical");
-        //}
+        /* Set aim to move direction if not aiming */
+        else
+        {
+            targetDirection.x = Input.GetAxis("Horizontal");
+            targetDirection.y = Input.GetAxis("Vertical");
+            if(targetDirection.magnitude > 0)
+            {
+                // Calculate rotation
+                targetDirection.Normalize();
+                float targetAngle = aimAngleOffset + (Mathf.Atan2(targetDirection.y, targetDirection.x) * Mathf.Rad2Deg);
+                Quaternion targetRotation = Quaternion.AngleAxis(targetAngle, Vector3.forward);
+
+                // Apply rotation with slerp to aim object
+                aimBaseChildObject.transform.rotation = Quaternion.Slerp(
+                    aimBaseChildObject.transform.rotation, targetRotation, Time.deltaTime * aimSpeed);
+            }
+        }
 
     }
 
