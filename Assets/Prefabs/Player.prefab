@@ -222,7 +222,7 @@ GameObject:
   - component: {fileID: 4045551317406654}
   - component: {fileID: 120827802738236234}
   m_Layer: 0
-  m_Name: AimLineLeft
+  m_Name: AimCone
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -627,6 +627,8 @@ MonoBehaviour:
   bulletLifetime: 0.5
   maxHits: 5
   maxShootDistance: 100
+  aimThreshold: 0.01
+  aimAngleOffset: -90
   aimLine: {fileID: 120827802738236234}
 --- !u!114 &114383281720550924
 MonoBehaviour:
@@ -641,9 +643,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   aimBaseChildObject: {fileID: 1407030196229208}
   baseMoveSpeed: 3
+  adsMoveSpeed: 1
   maxVelocityChange: 0.5
   baseAimSpeed: 7
+  adsAimSpeed: 2
   aimAngleOffset: -90
+  aimThreshold: 0.01
 --- !u!114 &114403061483768114
 MonoBehaviour:
   m_ObjectHideFlags: 1

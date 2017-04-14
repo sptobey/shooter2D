@@ -49,13 +49,6 @@ public class PlayerLife : NetworkBehaviour
 
     void Update()
     {
-        /*if(isHealthDamaged || isShieldDamaged)
-        {
-            Debug.Log(this.transform.name + " has " +
-            shield.ToString("F2") + " shield and " +
-            health.ToString("F2") + " health.");
-        }*/
-
         /* Health recovery */
         if (isHealthDamaged)
         {

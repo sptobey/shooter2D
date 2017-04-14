@@ -20,7 +20,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
     public float maxShootDistance = 100.0f;
 
     [Tooltip("How hard to press 'Aim' to aim"), Range(-1.0f, 1.0f)]
-    float aimThreshold = 0.01f;
+    public float aimThreshold = 0.01f;
 
     [Tooltip("Degrees offset from positive z-direction")]
     public float aimAngleOffset = -90;
