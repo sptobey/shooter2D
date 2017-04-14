@@ -50,15 +50,19 @@ public class PlayerWeapons : MonoBehaviour {
 
     public void decrementMagazine(int amount)
     {
+        amount = (amount <= 0) ? 0 : amount;
         switch (equippedSlot)
         {
             case "Primary":
+                amount = (amount > magazinePrimary) ? magazinePrimary : amount;
                 magazinePrimary -= amount;
                 return;
             case "Secondary":
+                amount = (amount > magazineSecondary) ? magazineSecondary : amount;
                 magazineSecondary -= amount;
                 return;
             case "Tertiary":
+                amount = (amount > magazineTertiary) ? magazineTertiary : amount;
                 magazineTertiary -= amount;
                 return;
             default:
@@ -238,6 +242,14 @@ public class PlayerWeapons : MonoBehaviour {
         get
         {
             return equippedWeapon;
+        }
+    }
+
+    public string EquippedSlot
+    {
+        get
+        {
+            return equippedSlot;
         }
     }
 }

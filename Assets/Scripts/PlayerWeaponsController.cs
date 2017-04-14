@@ -19,20 +19,34 @@ public class PlayerWeaponsController : NetworkBehaviour {
     [Tooltip("Range for raycast"), Range(0.0f, 500.0f)]
     public float maxShootDistance = 100.0f;
 
+    [Tooltip("How hard to press 'Aim' to aim"), Range(-1.0f, 1.0f)]
+    float aimThreshold = 0.01f;
+
+    [Tooltip("Degrees offset from positive z-direction")]
+    public float aimAngleOffset = -90;
+
+    private PlayerWeapons playerWeapons;
+
     private float fireButtonInput;
-    private Vector2 aimDirection;
+    private Vector3 aimDirection;
+    private bool isAiming;
 
     private bool waitingForFire;
     private bool waitingForReload;
     private bool waitingForEquip;
 
-    private PlayerWeapons playerWeapons;
+    [Tooltip("Aim Cone (should be drawn in local space)")]
+    public LineRenderer aimLine;
 
     void Start ()
     {
         playerWeapons = GetComponent<PlayerWeapons>();
         playerWeapons.equipWeapon("Primary");
 
+        fireButtonInput = -1.0f;
+        isAiming = false;
+        drawAimRange();
+        
         waitingForFire = false;
         waitingForReload = false;
         waitingForEquip = false;
@@ -40,7 +54,25 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
     void Update ()
     {
+        if(!isLocalPlayer)
+        {
+            return;
+        }
+
         /* Input */
+
+        /* Aim */
+        if(Input.GetAxis("L2_Axis") >= aimThreshold)
+        {
+            isAiming = true;
+        }
+        else
+        {
+            isAiming = false;
+        }
+        drawAimRange();
+
+        /* Fire */
         if (playerWeapons.EquippedWeapon.isAutomatic)
         {
             fireButtonInput = Input.GetAxis("R2_Axis");
@@ -56,10 +88,43 @@ public class PlayerWeaponsController : NetworkBehaviour {
             else { fireButtonInput = -1.0f; }
         }
 
-        Debug.Log("Firing: " + waitingForFire +
-                ", Reloading: " + waitingForReload +
-                ", Equipping: " + waitingForEquip +
-                ", Magazine: " + playerWeapons.roundsInMagazine());
+        /* Swap weapons */
+        if(Input.GetButtonDown("Triangle"))
+        {
+            string slot;
+            switch(playerWeapons.EquippedSlot)
+            {
+                case "Secondary":
+                    slot = "Primary";
+                    break;
+                case "Tertiary":
+                    slot = "Primary";
+                    break;
+                case "Primary":
+                default:
+                    slot = "Secondary";
+                    break;
+            }
+            if(!waitingForEquip && !waitingForFire && !waitingForReload)
+            {
+                StartCoroutine(handleEquipWeapon(slot));
+            }
+        }
+
+        /* Manual reload */
+        if (Input.GetButtonDown("Square"))
+        {
+            if (!waitingForEquip && !waitingForFire && !waitingForReload)
+            {
+                StartCoroutine(handleReloadWeapon());
+            }
+        }
+
+        /* Temporary UI/HUD */
+        //Debug.Log("Firing: " + waitingForFire +
+        //        ", Reloading: " + waitingForReload +
+        //        ", Equipping: " + waitingForEquip +
+        //        ", Magazine: " + playerWeapons.roundsInMagazine());
 
         /* Fire weapon */
         if (fireButtonInput >= playerWeapons.EquippedWeapon.fireThreshold
@@ -79,10 +144,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
     private IEnumerator handleFireWeapon()
     {
         float fireTime = (1 / playerWeapons.EquippedWeapon.roundsPerSecond);
+        Cmd_fireWeapon();
         waitingForFire = true;
 
         yield return new WaitForSeconds(fireTime);
-        Cmd_fireWeapon();
         waitingForFire = false;
     }
 
@@ -121,20 +186,61 @@ public class PlayerWeaponsController : NetworkBehaviour {
         waitingForEquip = false;
     }
 
+    private void drawAimRange()
+    {
+        float range, angle, lineWidthFactor;
+        if(!isAiming)
+        {
+            range = playerWeapons.EquippedWeapon.hipMinRange;
+            angle = playerWeapons.EquippedWeapon.hipAccuracy;
+        }
+        else
+        {
+            range = playerWeapons.EquippedWeapon.adsMaxRange;
+            angle = playerWeapons.EquippedWeapon.adsAccuracy;
+        }
+
+        lineWidthFactor = 2.0f * range * Mathf.Tan( Mathf.Deg2Rad * 0.5f * angle );
+
+        /* Note - Line drawn in local space */
+        Vector3 lineStartPos = aimLine.GetPosition(0);
+        Vector3 lineEndPos = new Vector3(
+            lineStartPos.x,
+            lineStartPos.y + range,
+            lineStartPos.z);
+        aimLine.SetPosition(0, lineStartPos);
+        aimLine.SetPosition(1, lineEndPos);
+        aimLine.widthMultiplier = lineWidthFactor;
+    }
+
     [Command]
     private void Cmd_fireWeapon()
     {
+        /* Direction and accuracy */
+        aimDirection = (fireLocation.position - playerCenter.position);
+        aimDirection.Normalize();
+        float inaccuracy = (!isAiming) ?
+            playerWeapons.hipAimAngle() :
+            playerWeapons.adsAimAngle();
+        float aimAngle = Mathf.Atan2(aimDirection.y, aimDirection.x) + (Mathf.Deg2Rad * inaccuracy);
+        Debug.Log("aim angle: " + aimAngle);
+        aimDirection.x = Mathf.Cos(aimAngle);
+        aimDirection.y = Mathf.Sin(aimAngle);
+        aimDirection.Normalize();
+
+        Quaternion bulletRotation = Quaternion.AngleAxis(
+            (aimAngle * Mathf.Rad2Deg) + aimAngleOffset,
+            Vector3.forward);
+
         /* Bullet prefab */
         GameObject bullet = Instantiate(
-            bulletPrefab, fireLocation.position, fireLocation.rotation);
+            bulletPrefab, fireLocation.position, bulletRotation);
         bullet.GetComponent<Rigidbody2D>().velocity = bullet.transform.up * bulletSpeed;
         /* Spawn the bullet on the Clients */
         NetworkServer.Spawn(bullet);
         Destroy(bullet, bulletLifetime);
 
         /* Raycast */
-        aimDirection = (fireLocation.position - playerCenter.position);
-        aimDirection.Normalize();
         RaycastHit2D[] hits = new RaycastHit2D[maxHits];
         int numHits = Physics2D.RaycastNonAlloc(
             fireLocation.position,
@@ -151,22 +257,36 @@ public class PlayerWeaponsController : NetworkBehaviour {
                 if (opponentLife != null)
                 {
                     float damage = 0.0f;
+                    float minRange, maxRange;
+                    if (!isAiming)
+                    {
+                        minRange = playerWeapons.EquippedWeapon.hipMinRange;
+                        maxRange = playerWeapons.EquippedWeapon.hipMaxRange;
+                    }
+                    else
+                    {
+                        minRange = playerWeapons.EquippedWeapon.adsMinRange;
+                        maxRange = playerWeapons.EquippedWeapon.adsMaxRange;
+                    }
+
                     float distance = (this.transform.position - hit.transform.position).magnitude;
-                    if (distance <= playerWeapons.EquippedWeapon.hipMinRange)
+                    if (distance <= minRange)
                     {
                         damage = playerWeapons.EquippedWeapon.roundMaxDamage;
                     }
-                    else if(distance >= playerWeapons.EquippedWeapon.hipMaxRange)
+                    else if(distance >= maxRange)
                     {
                         damage = playerWeapons.EquippedWeapon.roundMinDamage;
                     }
                     else
                     {
                         float lerp = Mathf.Clamp(
-                            (distance - playerWeapons.EquippedWeapon.hipMinRange) /
-                            (playerWeapons.EquippedWeapon.hipMaxRange - playerWeapons.EquippedWeapon.hipMinRange),
+                            (distance - minRange) / (maxRange - minRange),
                             0.0f, 1.0f);
-                        damage = Mathf.Lerp(playerWeapons.EquippedWeapon.roundMaxDamage, playerWeapons.EquippedWeapon.roundMinDamage, lerp);
+                        damage = Mathf.Lerp(
+                            playerWeapons.EquippedWeapon.roundMaxDamage,
+                            playerWeapons.EquippedWeapon.roundMinDamage,
+                            lerp);
                     }
                     opponentLife.Cmd_applyDamage(damage);
                 }
@@ -174,7 +294,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
         }
 
         /* Editor debug raycast */
-        Debug.DrawRay(fireLocation.position, aimDirection * maxShootDistance, Color.magenta, 0.1f);
+        Debug.DrawRay(
+            fireLocation.position,
+            aimDirection * maxShootDistance,
+            Color.magenta, 0.1f);
 
         /* Update weapon
          * TODO: recoil */

@@ -44,7 +44,6 @@ public class PlayerController : NetworkBehaviour {
         targetDirection.y = Input.GetAxis("Right_Stick_Vertical");
 
         /* Player velocity */
-
         // Scale input to desired velocity
         targetVelocity = transform.TransformDirection(targetVelocity);
         targetVelocity *= baseMoveSpeed;
@@ -60,7 +59,6 @@ public class PlayerController : NetworkBehaviour {
 
 
         /* Look Direction */
-
         if (targetDirection.magnitude > 0)
         {
             // Calculate rotation

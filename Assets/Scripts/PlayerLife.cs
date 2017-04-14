@@ -20,12 +20,12 @@ public class PlayerLife : NetworkBehaviour
     [Tooltip("Time to start recovering shield (seconds)")]
     public float shieldRecoveryDelay = 5.0f;
 
-    [SyncVar]
+    [SyncVar(hook = "OnChangeHealth")]
     public float currentHealth;
     private bool isHealthDamaged;
     private float timeHealthUndamaged;
 
-    [SyncVar]
+    [SyncVar(hook ="OnChangeShield")]
     public float currentShield;
     private bool isShieldDamaged;
     private float timeShieldUndamaged;
@@ -34,6 +34,7 @@ public class PlayerLife : NetworkBehaviour
     public RectTransform shieldBar;
     public Text textHealth;
     public Text textSheild;
+    public GameObject damageTextPrefab;
 
     void Start()
     {
@@ -54,18 +55,6 @@ public class PlayerLife : NetworkBehaviour
             shield.ToString("F2") + " shield and " +
             health.ToString("F2") + " health.");
         }*/
-
-        /* Display health/shield */
-        healthBar.sizeDelta = new Vector2(
-            (currentHealth / maxHealth) * 100,
-            healthBar.sizeDelta.y);
-
-        shieldBar.sizeDelta = new Vector2(
-            (currentShield / maxShield) * 100,
-            shieldBar.sizeDelta.y);
-
-        textHealth.text = currentHealth.ToString("F0");
-        textSheild.text = currentShield.ToString("F0");
 
         /* Health recovery */
         if (isHealthDamaged)
@@ -99,6 +88,24 @@ public class PlayerLife : NetworkBehaviour
         }
     }
 
+    private void OnChangeHealth(float health)
+    {
+        healthBar.sizeDelta = new Vector2(
+            (health / maxHealth) * 100,
+            healthBar.sizeDelta.y);
+
+        textHealth.text = health.ToString("F0");
+    }
+
+    private void OnChangeShield(float shield)
+    {
+        shieldBar.sizeDelta = new Vector2(
+            (shield / maxShield) * 100,
+            shieldBar.sizeDelta.y);
+
+        textSheild.text = shield.ToString("F0");
+    }
+
     [Command]
     public void Cmd_applyDamage(float damage)
     {
@@ -108,7 +115,15 @@ public class PlayerLife : NetworkBehaviour
         /* Ignore damage of 0.0 or less */
         if(damage <= 0.0f) { return; }
 
-        Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");
+        GameObject damageTextObj = Instantiate(damageTextPrefab, transform.position, transform.rotation);
+        Text damageText = damageTextObj.GetComponentInChildren<Text>();
+        if (damageText != null)
+        {
+            damageText.text = "-" + damage.ToString("F0");
+        }
+        Destroy(damageTextObj, 1.0f);
+
+        //Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");
 
         /* Apply damage to shield */
         currentShield -= damage;
