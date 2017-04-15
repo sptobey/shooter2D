@@ -28,15 +28,13 @@ public class PlayerWeaponsController : NetworkBehaviour {
     [Tooltip("Aim Cone (should be drawn in local space)")]
     public LineRenderer aimLine;
 
-    /* Synchronized variables ??? */
+    /* Clent-specific variables */
     private bool waitingForFire;
     private bool waitingForReload;
     private bool waitingForEquip;
 
     private float fireButtonInput;
     private Vector3 aimDirection;
-
-    private PlayerWeapons playerWeapons;
 
     /* Variables to communicate between Server and Clients */
     private bool isAiming;
@@ -45,6 +43,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
     private bool swapButton;
     private bool reloadButton;
     private string equippedSlot;
+    private PlayerWeapons playerWeapons; /* Handled implicitly */
 
     void Start ()
     {
@@ -79,17 +78,52 @@ public class PlayerWeaponsController : NetworkBehaviour {
         equippedSlot = c_equipSlot;
     }
 
+    [Command]
+    private void Cmd_reloadWeapon()
+    {
+        playerWeapons.reloadWeapon();
+    }
+
+    [Command]
+    private void Cmd_equipWeapon(string slot)
+    {
+        playerWeapons.equipWeapon(slot);
+        equippedSlot = slot;
+    }
+
     [ClientRpc]
     private void Rpc_sendInput(bool s_isAim, float s_fireAxis, bool s_fireBtn,
         bool s_swapBtn, bool s_reloadBtn, string s_equipSlot)
     {
-        if (isLocalPlayer) { Debug.Log("Client called from server"); }
         isAiming = s_isAim;
         fireAxis = s_fireAxis;
         fireButton = s_fireBtn;
         swapButton = s_swapBtn;
         reloadButton = s_reloadBtn;
         equippedSlot = s_equipSlot;
+    }
+
+    [ClientRpc]
+    private void Rpc_reloadWeapon()
+    {
+        playerWeapons.reloadWeapon();
+    }
+
+    [ClientRpc]
+    private void Rpc_equipWeapon(string slot)
+    {
+        playerWeapons.equipWeapon(slot);
+        equippedSlot = slot;
+    }
+
+    [ClientRpc]
+    private void Rpc_UpdatePlayerWeapons(int roundsFired)
+    {
+        playerWeapons.decrementMagazine(roundsFired);
+        if (playerWeapons.roundsInMagazine() <= 0)
+        {
+            StartCoroutine(handleReloadWeapon());
+        }
     }
 
     void Update ()
@@ -102,26 +136,15 @@ public class PlayerWeaponsController : NetworkBehaviour {
             fireButton = Input.GetButtonDown("R2_Button");
             swapButton = Input.GetButtonDown("Triangle");
             reloadButton = Input.GetButtonDown("Square");
-            switch (playerWeapons.EquippedSlot)
-            {
-                case "Secondary":
-                    equippedSlot = "Primary";
-                    break;
-                case "Tertiary":
-                    equippedSlot = "Primary";
-                    break;
-                case "Primary":
-                default:
-                    equippedSlot = "Secondary";
-                    break;
-            }
+            // equippedSlot handled elsewhere in coroutine
+
             /* Tell Server about Client input */
             if(!isServer)
             {
                 Cmd_sendInput(isAiming, fireAxis, fireButton,
                     swapButton, reloadButton, equippedSlot);
             }
-            /* Tell Clients about Server (host client) input */
+            /* Tell Clients about Server (i.e. host) input */
             else
             {
                 Rpc_sendInput(isAiming, fireAxis, fireButton,
@@ -143,7 +166,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
         }
 
         /* Swap weapons */
-        if (swapButton)
+        if (isLocalPlayer && swapButton)
         {
             string slot;
             switch (playerWeapons.EquippedSlot)
@@ -159,14 +182,14 @@ public class PlayerWeaponsController : NetworkBehaviour {
                     slot = "Secondary";
                     break;
             }
-            if (!waitingForEquip && !waitingForFire && !waitingForReload)
-            {
-                StartCoroutine(handleEquipWeapon(slot));
-            }
+                if (!waitingForEquip && !waitingForFire && !waitingForReload)
+                {
+                    StartCoroutine(handleEquipWeapon(slot));
+                }
         }
 
         /* Manual reload */
-        if (reloadButton)
+        if (isLocalPlayer && reloadButton)
         {
             if (!waitingForEquip && !waitingForFire && !waitingForReload)
             {
@@ -181,8 +204,8 @@ public class PlayerWeaponsController : NetworkBehaviour {
         //        ", Magazine: " + playerWeapons.roundsInMagazine());
 
         /* Fire weapon */
-        if (fireButtonInput >= playerWeapons.EquippedWeapon.fireThreshold
-            && isLocalPlayer)
+        if (isLocalPlayer &&
+            fireButtonInput >= playerWeapons.EquippedWeapon.fireThreshold)
         {
             /* Fire rate enforced, not reloading, has ammunition */
             if (!waitingForFire &&
@@ -207,11 +230,18 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
     private IEnumerator handleReloadWeapon()
     {
+        /*  Weapon does not need to (or cannot) be reloaded */
+        if (!playerWeapons.needsReloading()) { yield break; }
+
         float reloadTime = playerWeapons.EquippedWeapon.reloadSpeed;
         waitingForReload = true;
 
         yield return new WaitForSeconds(reloadTime);
         playerWeapons.reloadWeapon();
+
+        if(!isServer) { Cmd_reloadWeapon(); }
+        else { Rpc_reloadWeapon(); }
+        
         waitingForReload = false;
     }
 
@@ -237,6 +267,11 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
         yield return new WaitForSeconds(equipTime);
         playerWeapons.equipWeapon(slot);
+        equippedSlot = slot;
+
+        if (!isServer) { Cmd_equipWeapon(slot); }
+        else { Rpc_equipWeapon(slot); }
+
         waitingForEquip = false;
     }
 
@@ -353,12 +388,8 @@ public class PlayerWeaponsController : NetworkBehaviour {
             aimDirection * maxShootDistance,
             Color.magenta, 0.1f);
 
-        /* Update weapon
-         * TODO: recoil */
-        playerWeapons.decrementMagazine(1);
-        if (playerWeapons.roundsInMagazine() <= 0)
-        {
-            StartCoroutine(handleReloadWeapon());
-        }
-    } /* Cmd_fireWeapon() */
+        /* Update weapon TODO: recoil */
+        Rpc_UpdatePlayerWeapons(1);
+
+    } /* Cmd_fireWeapon */
 }

@@ -49,6 +49,38 @@ public class PlayerWeapons : NetworkBehaviour {
         }
     }
 
+    public bool needsReloading()
+    {
+        float magAmmo, magSize, reserves;
+        switch (equippedSlot)
+        {
+            case "Secondary":
+                magAmmo = magazineSecondary;
+                magSize = secondaryWeapon.magazineSize;
+                reserves = ammoReservesSecondary;
+                break;
+            case "Tertiary":
+                magAmmo = magazineTertiary;
+                magSize = tertiaryWeapon.magazineSize;
+                reserves = ammoReservesTertiary;
+                break;
+            case "Primary":
+            default:
+                magAmmo = magazinePrimary;
+                magSize = primaryWeapon.magazineSize;
+                reserves = ammoReservesPrimary;
+                break;
+        }
+        if((reserves <= 0) || (magSize == magAmmo))
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+}
+
     public void decrementMagazine(int amount)
     {
         amount = (amount <= 0) ? 0 : amount;
