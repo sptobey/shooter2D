@@ -109,11 +109,12 @@ public class PlayerLife : NetworkBehaviour
         if(damage <= 0.0f) { return; }
 
         GameObject damageTextObj = Instantiate(damageTextPrefab, transform.position, transform.rotation);
-        Text damageText = damageTextObj.GetComponentInChildren<Text>();
-        if (damageText != null)
+        DamageTextUpdate damageScript = damageTextObj.GetComponent<DamageTextUpdate>();
+        if (damageScript != null)
         {
-            damageText.text = "-" + damage.ToString("F0");
+            damageScript.textDamage = "-" + damage.ToString("F0");
         }
+        NetworkServer.Spawn(damageTextObj);
         Destroy(damageTextObj, 1.0f);
 
         //Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");

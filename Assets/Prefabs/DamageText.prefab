@@ -19,10 +19,13 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 224840064196384094}
+  - component: {fileID: 114238759388401114}
+  - component: {fileID: 114353789588484896}
   - component: {fileID: 223591304568812054}
   - component: {fileID: 114796928920397256}
   - component: {fileID: 114723190221380216}
   - component: {fileID: 222939937986880738}
+  - component: {fileID: 114666737293224866}
   m_Layer: 5
   m_Name: DamageText
   m_TagString: Untagged
@@ -80,6 +83,70 @@ MonoBehaviour:
     m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: -10
+--- !u!114 &114238759388401114
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1125663736504308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 372142912, guid: dc443db3e92b4983b9738c1131f555cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SceneId:
+    m_Value: 0
+  m_AssetId:
+    i0: 61
+    i1: 97
+    i2: 157
+    i3: 114
+    i4: 56
+    i5: 182
+    i6: 35
+    i7: 244
+    i8: 123
+    i9: 203
+    i10: 30
+    i11: 197
+    i12: 172
+    i13: 202
+    i14: 37
+    i15: 21
+  m_ServerOnly: 0
+  m_LocalPlayerAuthority: 0
+--- !u!114 &114353789588484896
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1125663736504308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1768714887, guid: dc443db3e92b4983b9738c1131f555cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TransformSyncMode: 1
+  m_SendInterval: 0
+  m_SyncRotationAxis: 3
+  m_RotationSyncCompression: 0
+  m_SyncSpin: 0
+  m_MovementTheshold: 0.001
+  m_SnapThreshold: 5
+  m_InterpolateRotation: 1
+  m_InterpolateMovement: 1
+--- !u!114 &114666737293224866
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1125663736504308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2018c89f8d706d4895dcdcc1cbe8949, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textDamage: -10
 --- !u!114 &114723190221380216
 MonoBehaviour:
   m_ObjectHideFlags: 1

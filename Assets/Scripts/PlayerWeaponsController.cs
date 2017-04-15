@@ -376,7 +376,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
                             playerWeapons.EquippedWeapon.roundMinDamage,
                             lerp);
                     }
-                    Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + "IsServer: " + isServer);
+                    Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + ". IsServer: " + isServer);
                     opponentLife.Cmd_applyDamage(damage);
                 }
             }
