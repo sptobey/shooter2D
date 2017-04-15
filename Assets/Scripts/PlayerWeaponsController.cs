@@ -25,18 +25,26 @@ public class PlayerWeaponsController : NetworkBehaviour {
     [Tooltip("Degrees offset from positive z-direction")]
     public float aimAngleOffset = -90;
 
-    private PlayerWeapons playerWeapons;
+    [Tooltip("Aim Cone (should be drawn in local space)")]
+    public LineRenderer aimLine;
 
-    private float fireButtonInput;
-    private Vector3 aimDirection;
-    private bool isAiming;
-
+    /* Synchronized variables ??? */
     private bool waitingForFire;
     private bool waitingForReload;
     private bool waitingForEquip;
 
-    [Tooltip("Aim Cone (should be drawn in local space)")]
-    public LineRenderer aimLine;
+    private float fireButtonInput;
+    private Vector3 aimDirection;
+
+    private PlayerWeapons playerWeapons;
+
+    /* Variables to communicate between Server and Clients */
+    private bool isAiming;
+    private float fireAxis;
+    private bool fireButton;
+    private bool swapButton;
+    private bool reloadButton;
+    private string equippedSlot;
 
     void Start ()
     {
@@ -44,55 +52,101 @@ public class PlayerWeaponsController : NetworkBehaviour {
         playerWeapons.equipWeapon("Primary");
 
         fireButtonInput = -1.0f;
-        isAiming = false;
-        drawAimRange();
-        
+                
         waitingForFire = false;
         waitingForReload = false;
         waitingForEquip = false;
+
+        isAiming = false;
+        fireAxis = -1.0f;
+        fireButton = false;
+        swapButton = false;
+        reloadButton = false;
+        equippedSlot = "Primary";
+
+        drawAimRange();
+    }
+
+    [Command]
+    private void Cmd_sendInput(bool c_isAim, float c_fireAxis,bool c_fireBtn, 
+        bool c_swapBtn, bool c_reloadBtn, string c_equipSlot)
+    {
+        isAiming = c_isAim;
+        fireAxis = c_fireAxis;
+        fireButton = c_fireBtn;
+        swapButton = c_swapBtn;
+        reloadButton = c_reloadBtn;
+        equippedSlot = c_equipSlot;
+    }
+
+    [ClientRpc]
+    private void Rpc_sendInput(bool s_isAim, float s_fireAxis, bool s_fireBtn,
+        bool s_swapBtn, bool s_reloadBtn, string s_equipSlot)
+    {
+        if (isLocalPlayer) { Debug.Log("Client called from server"); }
+        isAiming = s_isAim;
+        fireAxis = s_fireAxis;
+        fireButton = s_fireBtn;
+        swapButton = s_swapBtn;
+        reloadButton = s_reloadBtn;
+        equippedSlot = s_equipSlot;
     }
 
     void Update ()
     {
-        if(!isLocalPlayer)
+        /* Input from Client (or Server/Host) */
+        if (isLocalPlayer)
         {
-            return;
+            isAiming = (Input.GetAxis("L2_Axis") >= aimThreshold) ? true : false;
+            fireAxis = Input.GetAxis("R2_Axis");
+            fireButton = Input.GetButtonDown("R2_Button");
+            swapButton = Input.GetButtonDown("Triangle");
+            reloadButton = Input.GetButtonDown("Square");
+            switch (playerWeapons.EquippedSlot)
+            {
+                case "Secondary":
+                    equippedSlot = "Primary";
+                    break;
+                case "Tertiary":
+                    equippedSlot = "Primary";
+                    break;
+                case "Primary":
+                default:
+                    equippedSlot = "Secondary";
+                    break;
+            }
+            /* Tell Server about Client input */
+            if(!isServer)
+            {
+                Cmd_sendInput(isAiming, fireAxis, fireButton,
+                    swapButton, reloadButton, equippedSlot);
+            }
+            /* Tell Clients about Server (host client) input */
+            else
+            {
+                Rpc_sendInput(isAiming, fireAxis, fireButton,
+                    swapButton, reloadButton, equippedSlot);
+            }
         }
-
-        /* Input */
 
         /* Aim */
-        if(Input.GetAxis("L2_Axis") >= aimThreshold)
-        {
-            isAiming = true;
-        }
-        else
-        {
-            isAiming = false;
-        }
         drawAimRange();
 
         /* Fire */
         if (playerWeapons.EquippedWeapon.isAutomatic)
         {
-            fireButtonInput = Input.GetAxis("R2_Axis");
-            //Debug.Log("R2 Automatic Trigger: " + fireButtonInput);
+            fireButtonInput = fireAxis;
         }
         else
         {
-            if (Input.GetButtonDown("R2_Button"))
-            {
-                fireButtonInput = +1.0f;
-                //Debug.Log("R2 Button: " + fireButtonInput);
-            }
-            else { fireButtonInput = -1.0f; }
+            fireButtonInput = (fireButton) ? 1.0f : -1.0f;
         }
 
         /* Swap weapons */
-        if(Input.GetButtonDown("Triangle"))
+        if (swapButton)
         {
             string slot;
-            switch(playerWeapons.EquippedSlot)
+            switch (playerWeapons.EquippedSlot)
             {
                 case "Secondary":
                     slot = "Primary";
@@ -105,14 +159,14 @@ public class PlayerWeaponsController : NetworkBehaviour {
                     slot = "Secondary";
                     break;
             }
-            if(!waitingForEquip && !waitingForFire && !waitingForReload)
+            if (!waitingForEquip && !waitingForFire && !waitingForReload)
             {
                 StartCoroutine(handleEquipWeapon(slot));
             }
         }
 
         /* Manual reload */
-        if (Input.GetButtonDown("Square"))
+        if (reloadButton)
         {
             if (!waitingForEquip && !waitingForFire && !waitingForReload)
             {
@@ -252,7 +306,6 @@ public class PlayerWeaponsController : NetworkBehaviour {
         {
             if (hit.collider != null)
             {
-                //Debug.Log("Hit: " + hit.collider.name);
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
                 if (opponentLife != null)
                 {
@@ -288,6 +341,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
                             playerWeapons.EquippedWeapon.roundMinDamage,
                             lerp);
                     }
+                    Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + "IsServer: " + isServer);
                     opponentLife.Cmd_applyDamage(damage);
                 }
             }

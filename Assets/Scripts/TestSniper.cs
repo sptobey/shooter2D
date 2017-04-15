@@ -15,15 +15,15 @@ public class TestSniper : AbstractWeapon
     public override bool isAutomatic { get { return false; } }
     public override float fireThreshold { get { return 0.01f; } }
 
-    public override float hipMinRange { get { return 1.0f; } }
+    public override float hipMinRange { get { return 2.0f; } }
     public override float hipMaxRange { get { return 5.0f; } }
-    public override float hipAccuracy { get { return 45.0f; } }
+    public override float hipAccuracy { get { return 60.0f; } }
     public override float hipRecoil { get { return 20.0f; } }
     public override float hipAccuracyRecovery { get { return 5.0f; } }
 
     public override float adsMinRange { get { return 15.0f; } }
     public override float adsMaxRange { get { return 45.0f; } }
-    public override float adsAccuracy { get { return 2.0f; } }
+    public override float adsAccuracy { get { return 0.5f; } }
     public override float adsRecoil { get { return 2.0f; } }
     public override float adsAccuracyRecovery { get { return 2.0f; } }
 

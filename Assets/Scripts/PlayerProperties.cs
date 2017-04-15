@@ -5,6 +5,9 @@ using UnityEngine.Networking;
 
 public class PlayerProperties : NetworkBehaviour {
 
+    [Tooltip("Player Camera")]
+    public GameObject playerCamera;
+
     [Tooltip("Pointer object")]
     public GameObject aimChildPointer;
 
@@ -19,6 +22,14 @@ public class PlayerProperties : NetworkBehaviour {
     {
         GetComponent<SpriteRenderer>().material = selfMaterial;
         aimChildPointer.GetComponent<SpriteRenderer>().material = selfMaterial;
+    }
+
+    void Start()
+    {
+        if(!isLocalPlayer)
+        {
+            playerCamera.SetActive(false);
+        }
     }
 
 }
