@@ -76,12 +76,19 @@ public class PlayerWeaponsController : NetworkBehaviour {
         swapButton = c_swapBtn;
         reloadButton = c_reloadBtn;
         equippedSlot = c_equipSlot;
+
+        /* Update other Clients */
+        Rpc_sendInput(c_isAim, c_fireAxis, c_fireBtn,
+        c_swapBtn, c_reloadBtn, c_equipSlot);
     }
 
     [Command]
     private void Cmd_reloadWeapon()
     {
         playerWeapons.reloadWeapon();
+
+        /* Update other Clients */
+        Rpc_reloadWeapon();
     }
 
     [Command]
@@ -89,6 +96,9 @@ public class PlayerWeaponsController : NetworkBehaviour {
     {
         playerWeapons.equipWeapon(slot);
         equippedSlot = slot;
+
+        /* Update other Clients */
+        Rpc_equipWeapon(slot);
     }
 
     [ClientRpc]
