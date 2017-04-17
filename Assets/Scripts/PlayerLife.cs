@@ -142,12 +142,22 @@ public class PlayerLife : NetworkBehaviour
         if (currentHealth < +0.5f)
         {
             currentHealth = 0.0f;
-            handleDeath();
+            Rpc_handleDeathRespawn();
         }
     }
 
-    private void handleDeath()
+    [ClientRpc]
+    private void Rpc_handleDeathRespawn()
     {
-        Debug.Log("Player Died.");
+        if(isLocalPlayer)
+        {
+            transform.position = Vector3.zero;
+        }
+        currentShield = maxShield;
+        currentHealth = maxHealth;
+        isShieldDamaged = false;
+        isHealthDamaged = false;
+        timeShieldUndamaged = float.PositiveInfinity;
+        timeHealthUndamaged = float.PositiveInfinity;
     }
 }

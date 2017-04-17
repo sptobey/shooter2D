@@ -27,6 +27,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
     [Tooltip("Aim Cone (should be drawn in local space)")]
     public LineRenderer aimLine;
+    private Vector3 lineStartPos;
 
     /* Clent-specific variables */
     private bool waitingForFire;
@@ -63,6 +64,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
         reloadButton = false;
         equippedSlot = "Primary";
 
+        lineStartPos = aimLine.GetPosition(0);
         drawAimRange();
     }
 
@@ -302,7 +304,6 @@ public class PlayerWeaponsController : NetworkBehaviour {
         lineWidthFactor = 2.0f * range * Mathf.Tan( Mathf.Deg2Rad * 0.5f * angle );
 
         /* Note - Line drawn in local space */
-        Vector3 lineStartPos = aimLine.GetPosition(0);
         Vector3 lineEndPos = new Vector3(
             lineStartPos.x,
             lineStartPos.y + range,
