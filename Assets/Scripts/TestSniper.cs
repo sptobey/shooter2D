@@ -8,7 +8,7 @@ public class TestSniper : AbstractWeapon
     public override float roundMinDamage { get { return 150.0f; } }
     public override float roundMaxPrecisionDamage { get { return 400.0f; } }
     public override float roundMinPrecisionDamage { get { return 200.0f; } }
-    public override float roundsPerSecond { get { return 1.0f; } }
+    public override float roundsPerSecond { get { return 0.75f; } }
     public override int magazineSize { get { return 4; } }
     public override float reloadSpeed { get { return 2.5f; } }
 
