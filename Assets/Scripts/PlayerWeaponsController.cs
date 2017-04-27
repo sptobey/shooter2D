@@ -404,17 +404,14 @@ public class PlayerWeaponsController : NetworkBehaviour {
          *   -->PointerBody
          *        -->PlayerCenterCriticalSpot
          */
-        HashSet<int> precisionHits = new HashSet<int>();
         HashSet<int> needsPrecisionDamage = new HashSet<int>();
         foreach (RaycastHit2D hit in hits)
         {
             if (hit.collider != null)
             {
-                int hit_id = hit.collider.GetInstanceID();
                 int root_id = hit.transform.root.GetInstanceID();
                 if (hit.collider.tag == precisionTagName)
                 {
-                    precisionHits.Add(hit_id);
                     needsPrecisionDamage.Add(root_id);
                 }
                 Debug.Log("Hit: " + hit.collider.name + " (" + hit.collider.GetInstanceID() + ").  Root: " + 
@@ -427,17 +424,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
         {
             if (hit.collider != null)
             {
-                int hit_id = hit.collider.GetInstanceID();
                 int root_id = hit.transform.root.GetInstanceID();
-                /* Do not apply damage twice (precision infor. is stored in the other set) */
-                //if (precisionHits.Contains(hit_id))
-                //{
-                //    continue;
-                //}
-                /* Check if the player hit had its precision spot hit, too. */
                 bool isPrecisionDamage = needsPrecisionDamage.Contains(root_id);
 
-                /* Ignore non-damageable players, for now */
+                /* Apply damage only to players, for now */
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
                 if (opponentLife != null)
                 {
@@ -484,7 +474,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
                         damage = Mathf.Lerp(damMax, damMin, lerp);
                     }
 
-                    //Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + ". Critical: " + isPrecisionDamage);
+                    Debug.Log("Hit Player: " + hit.collider.name);
 
                     /* Apply Damage */
                     opponentLife.Cmd_applyDamage(damage, isPrecisionDamage);
