@@ -5,7 +5,8 @@ using UnityEngine.Networking;
 
 public class PlayerWeaponsController : NetworkBehaviour {
 
-    public LayerMask shootableLayers;
+    public LayerMask allShootableLayers;
+    public string precisionTagName;
     public Transform fireLocation;
     public Transform playerCenter;
 
@@ -13,7 +14,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
     public float bulletSpeed = 100.0f;
     public float bulletLifetime = 0.5f;
     
-    [Tooltip("Hit penetration depth"), Range(1,5)]
+    [Tooltip("Hit penetration depth"), Range(1,10)]
     public int maxHits = 5;
 
     [Tooltip("Range for raycast"), Range(0.0f, 500.0f)]
@@ -28,6 +29,11 @@ public class PlayerWeaponsController : NetworkBehaviour {
     [Tooltip("Aim Cone (should be drawn in local space)")]
     public LineRenderer aimLine;
     private Vector3 lineStartPos;
+
+    /* Audio */
+    private AudioSource audioSource;
+    public AudioClip primaryWeaponAudioClip;
+    public AudioClip secondaryWeaponAudioClip;
 
     /* Clent-specific variables */
     private bool waitingForFire;
@@ -50,6 +56,8 @@ public class PlayerWeaponsController : NetworkBehaviour {
     {
         playerWeapons = GetComponent<PlayerWeapons>();
         playerWeapons.equipWeapon("Primary");
+
+        audioSource = GetComponent<AudioSource>();
 
         fireButtonInput = -1.0f;
                 
@@ -103,6 +111,23 @@ public class PlayerWeaponsController : NetworkBehaviour {
         Rpc_equipWeapon(slot);
     }
 
+    [Command]
+    private void Cmd_PlayWeaponAudio()
+    {
+        if(playerWeapons.EquippedSlot == "Primary")
+        {
+            audioSource.clip = primaryWeaponAudioClip;
+        }
+        else if(playerWeapons.EquippedSlot == "Secondary")
+        {
+            audioSource.clip = secondaryWeaponAudioClip;
+        }
+
+        audioSource.Play();
+
+        Rpc_PlayWeaponAudio();
+    }
+
     [ClientRpc]
     private void Rpc_sendInput(bool s_isAim, float s_fireAxis, bool s_fireBtn,
         bool s_swapBtn, bool s_reloadBtn, string s_equipSlot)
@@ -136,6 +161,21 @@ public class PlayerWeaponsController : NetworkBehaviour {
         {
             StartCoroutine(handleReloadWeapon());
         }
+    }
+
+    [ClientRpc]
+    private void Rpc_PlayWeaponAudio()
+    {
+        if (playerWeapons.EquippedSlot == "Primary")
+        {
+            audioSource.clip = primaryWeaponAudioClip;
+        }
+        else if (playerWeapons.EquippedSlot == "Secondary")
+        {
+            audioSource.clip = secondaryWeaponAudioClip;
+        }
+
+        audioSource.Play();
     }
 
     void Update ()
@@ -194,7 +234,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
                     slot = "Secondary";
                     break;
             }
-                if (!waitingForEquip && !waitingForFire && !waitingForReload)
+                if (!waitingForEquip && !waitingForReload) //&& !waitingForFire
                 {
                     StartCoroutine(handleEquipWeapon(slot));
                 }
@@ -203,7 +243,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
         /* Manual reload */
         if (isLocalPlayer && reloadButton)
         {
-            if (!waitingForEquip && !waitingForFire && !waitingForReload)
+            if (!waitingForEquip && !waitingForReload) //&& !waitingForFire
             {
                 StartCoroutine(handleReloadWeapon());
             }
@@ -233,8 +273,8 @@ public class PlayerWeaponsController : NetworkBehaviour {
     private IEnumerator handleFireWeapon()
     {
         float fireTime = (1 / playerWeapons.EquippedWeapon.roundsPerSecond);
-        Cmd_fireWeapon();
         waitingForFire = true;
+        Cmd_fireWeapon();
 
         yield return new WaitForSeconds(fireTime);
         waitingForFire = false;
@@ -245,16 +285,18 @@ public class PlayerWeaponsController : NetworkBehaviour {
         /*  Weapon does not need to (or cannot) be reloaded */
         if (!playerWeapons.needsReloading()) { yield break; }
 
-        float reloadTime = playerWeapons.EquippedWeapon.reloadSpeed;
         waitingForReload = true;
 
-        yield return new WaitForSeconds(reloadTime);
+        yield return new WaitForSeconds(playerWeapons.EquippedWeapon.reloadSpeed);
         playerWeapons.reloadWeapon();
 
         if(!isServer) { Cmd_reloadWeapon(); }
         else { Rpc_reloadWeapon(); }
         
         waitingForReload = false;
+
+        /* Allow immediate fire after reload */
+        waitingForFire = false;
     }
 
     private IEnumerator handleEquipWeapon(string slot)
@@ -285,6 +327,9 @@ public class PlayerWeaponsController : NetworkBehaviour {
         else { Rpc_equipWeapon(slot); }
 
         waitingForEquip = false;
+
+        /* Allow immediate fire after equip */
+        waitingForFire = false;
     }
 
     private void drawAimRange()
@@ -340,6 +385,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
         NetworkServer.Spawn(bullet);
         Destroy(bullet, bulletLifetime);
 
+        /* Audio */
+        if (!isServer) { Cmd_PlayWeaponAudio(); }
+        else { Rpc_PlayWeaponAudio(); }
+
         /* Raycast */
         RaycastHit2D[] hits = new RaycastHit2D[maxHits];
         int numHits = Physics2D.RaycastNonAlloc(
@@ -347,16 +396,55 @@ public class PlayerWeaponsController : NetworkBehaviour {
             aimDirection,
             hits,
             maxShootDistance,
-            shootableLayers.value);
+            allShootableLayers.value);
+
+        /* Detect precision damage.  Keep track of names of precision objects 
+         * hit and the parent object.  Hard-coded based on player heirarchy:
+         * Player_vX (contains the life script and principal collider)
+         *   -->PointerBody
+         *        -->PlayerCenterCriticalSpot
+         */
+        HashSet<int> precisionHits = new HashSet<int>();
+        HashSet<int> needsPrecisionDamage = new HashSet<int>();
         foreach (RaycastHit2D hit in hits)
         {
             if (hit.collider != null)
             {
+                int hit_id = hit.collider.GetInstanceID();
+                int root_id = hit.transform.root.GetInstanceID();
+                if (hit.collider.tag == precisionTagName)
+                {
+                    precisionHits.Add(hit_id);
+                    needsPrecisionDamage.Add(root_id);
+                }
+                Debug.Log("Hit: " + hit.collider.name + " (" + hit.collider.GetInstanceID() + ").  Root: " + 
+                    hit.transform.root.name + " (" + hit.transform.root.GetInstanceID() + ").  Tag: " + 
+                    hit.collider.tag);
+            }
+        }
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider != null)
+            {
+                int hit_id = hit.collider.GetInstanceID();
+                int root_id = hit.transform.root.GetInstanceID();
+                /* Do not apply damage twice (precision infor. is stored in the other set) */
+                //if (precisionHits.Contains(hit_id))
+                //{
+                //    continue;
+                //}
+                /* Check if the player hit had its precision spot hit, too. */
+                bool isPrecisionDamage = needsPrecisionDamage.Contains(root_id);
+
+                /* Ignore non-damageable players, for now */
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
                 if (opponentLife != null)
                 {
                     float damage = 0.0f;
                     float minRange, maxRange;
+
+                    /* Determine range falloff damage based on if ADS or not */
                     if (!isAiming)
                     {
                         minRange = playerWeapons.EquippedWeapon.hipMinRange;
@@ -368,27 +456,38 @@ public class PlayerWeaponsController : NetworkBehaviour {
                         maxRange = playerWeapons.EquippedWeapon.adsMaxRange;
                     }
 
+                    /* Calculate the amount of damage to do based on range and precsion hits */
                     float distance = (this.transform.position - hit.transform.position).magnitude;
                     if (distance <= minRange)
                     {
-                        damage = playerWeapons.EquippedWeapon.roundMaxDamage;
+                        damage = (isPrecisionDamage) ?
+                            playerWeapons.EquippedWeapon.roundMaxPrecisionDamage :
+                            playerWeapons.EquippedWeapon.roundMaxDamage;
                     }
                     else if(distance >= maxRange)
                     {
-                        damage = playerWeapons.EquippedWeapon.roundMinDamage;
+                        damage = (isPrecisionDamage) ?
+                            playerWeapons.EquippedWeapon.roundMinPrecisionDamage :
+                            playerWeapons.EquippedWeapon.roundMinDamage;
                     }
                     else
                     {
                         float lerp = Mathf.Clamp(
                             (distance - minRange) / (maxRange - minRange),
                             0.0f, 1.0f);
-                        damage = Mathf.Lerp(
-                            playerWeapons.EquippedWeapon.roundMaxDamage,
-                            playerWeapons.EquippedWeapon.roundMinDamage,
-                            lerp);
+                        float damMax = (isPrecisionDamage) ?
+                            playerWeapons.EquippedWeapon.roundMaxPrecisionDamage :
+                            playerWeapons.EquippedWeapon.roundMaxDamage;
+                        float damMin = (isPrecisionDamage) ?
+                            playerWeapons.EquippedWeapon.roundMinPrecisionDamage :
+                            playerWeapons.EquippedWeapon.roundMinDamage;
+                        damage = Mathf.Lerp(damMax, damMin, lerp);
                     }
-                    Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + ". IsServer: " + isServer);
-                    opponentLife.Cmd_applyDamage(damage);
+
+                    //Debug.Log("Hit: " + hit.collider.name + ". Damage: " + damage + ". Critical: " + isPrecisionDamage);
+
+                    /* Apply Damage */
+                    opponentLife.Cmd_applyDamage(damage, isPrecisionDamage);
                 }
             }
         }

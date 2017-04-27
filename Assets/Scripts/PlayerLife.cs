@@ -35,6 +35,9 @@ public class PlayerLife : NetworkBehaviour
     public Text textHealth;
     public Text textSheild;
     public GameObject damageTextPrefab;
+    public float damageTextLifetime = 2.0f;
+    public Color regularDamageTextColor;
+    public Color precisionDamageTextColor;
 
     void Start()
     {
@@ -100,7 +103,7 @@ public class PlayerLife : NetworkBehaviour
     }
 
     [Command]
-    public void Cmd_applyDamage(float damage)
+    public void Cmd_applyDamage(float damage, bool isPrecisionDamage)
     {
         /* Apply damage only on Server */
         if (!isServer) { return; }
@@ -108,14 +111,25 @@ public class PlayerLife : NetworkBehaviour
         /* Ignore damage of 0.0 or less */
         if(damage <= 0.0f) { return; }
 
+        /* Bad design... hard-coded to prefab */
         GameObject damageTextObj = Instantiate(damageTextPrefab, transform.position, transform.rotation);
         DamageTextUpdate damageScript = damageTextObj.GetComponent<DamageTextUpdate>();
         if (damageScript != null)
         {
             damageScript.textDamage = "-" + damage.ToString("F0");
+            Text dmgText = damageTextObj.GetComponentInChildren<Text>();
+            if (isPrecisionDamage)
+            {
+                dmgText.color = precisionDamageTextColor;
+                dmgText.fontStyle = FontStyle.Bold;
+            }
+            else
+            {
+                dmgText.color = regularDamageTextColor;
+            }
         }
         NetworkServer.Spawn(damageTextObj);
-        Destroy(damageTextObj, 1.0f);
+        Destroy(damageTextObj, damageTextLifetime);
 
         //Debug.Log(transform.name + " takes " + damage.ToString("F2") + " damage.");
 

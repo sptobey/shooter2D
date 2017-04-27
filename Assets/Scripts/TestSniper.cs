@@ -30,6 +30,6 @@ public class TestSniper : AbstractWeapon
     public override string slot { get { return "Secondary"; } }
     public override string type { get { return "Sniper"; } }
     public override int ammunitionCapacity { get { return 25; } }
-    public override float equipTime { get { return 0.75f; } }
+    public override float equipTime { get { return 0.35f; } }
     public override float adsTime { get { return 0.75f; } }
 }
