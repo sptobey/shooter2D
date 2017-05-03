@@ -154,4 +154,10 @@ public class PlayerController : NetworkBehaviour {
         isSprinting = false;
         isSprintLocked = false;
     }
+
+    public bool getIsSprintLocked()
+    {
+        return isSprintLocked;
+    }
+
 }

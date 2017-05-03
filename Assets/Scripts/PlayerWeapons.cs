@@ -25,13 +25,18 @@ public class PlayerWeapons : NetworkBehaviour {
         equippedWeapon = primaryWeapon;
         equippedSlot = "Primary";
 
-        ammoReservesPrimary   = primaryWeapon.ammunitionCapacity;
-        ammoReservesSecondary = secondaryWeapon.ammunitionCapacity;
-        ammoReservesTertiary  = tertiaryWeapon.ammunitionCapacity;
+        refillAmmunition();
+    }
 
-        magazinePrimary   = primaryWeapon.magazineSize;
+    public void refillAmmunition()
+    {
+        ammoReservesPrimary = primaryWeapon.ammunitionCapacity;
+        ammoReservesSecondary = secondaryWeapon.ammunitionCapacity;
+        ammoReservesTertiary = tertiaryWeapon.ammunitionCapacity;
+
+        magazinePrimary = primaryWeapon.magazineSize;
         magazineSecondary = secondaryWeapon.magazineSize;
-        magazineTertiary  = tertiaryWeapon.magazineSize;
+        magazineTertiary = tertiaryWeapon.magazineSize;
     }
 
     public int roundsInMagazine()
@@ -231,6 +236,24 @@ public class PlayerWeapons : NetworkBehaviour {
         }
     }
 
+    public int getAmmoReserves
+    {
+        get
+        {
+            switch(equippedSlot)
+            {
+                case "Primary":
+                    return ammoReservesPrimary;
+                case "Secondary":
+                    return ammoReservesSecondary;
+                case "Tertiary":
+                    return ammoReservesTertiary;
+                default:
+                    return 0;
+            }
+        }
+    }
+
     public int MagazinePrimary
     {
         get
@@ -267,6 +290,24 @@ public class PlayerWeapons : NetworkBehaviour {
         set
         {
             magazineTertiary = value;
+        }
+    }
+
+    public int getAmmoMagazine
+    {
+        get
+        {
+            switch (equippedSlot)
+            {
+                case "Primary":
+                    return magazinePrimary;
+                case "Secondary":
+                    return magazineSecondary;
+                case "Tertiary":
+                    return magazineTertiary;
+                default:
+                    return 0;
+            }
         }
     }
 

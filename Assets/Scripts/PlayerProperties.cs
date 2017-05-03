@@ -8,6 +8,8 @@ public class PlayerProperties : NetworkBehaviour {
     [Tooltip("Player Camera")]
     public GameObject playerCamera;
 
+    public GameObject playerHUD;
+
     [Tooltip("Pointer object")]
     public GameObject aimChildPointer;
 
@@ -29,6 +31,7 @@ public class PlayerProperties : NetworkBehaviour {
         if(!isLocalPlayer)
         {
             playerCamera.SetActive(false);
+            playerHUD.SetActive(false);
         }
     }
 

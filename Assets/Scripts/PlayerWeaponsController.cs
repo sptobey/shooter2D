@@ -420,6 +420,10 @@ public class PlayerWeaponsController : NetworkBehaviour {
             }
         }
 
+        /* Variable to prevent damage through walls.
+         * Relies on the order of the raycast results array. */
+        bool wasWallHit= false;
+
         foreach (RaycastHit2D hit in hits)
         {
             if (hit.collider != null)
@@ -429,7 +433,7 @@ public class PlayerWeaponsController : NetworkBehaviour {
 
                 /* Apply damage only to players, for now */
                 PlayerLife opponentLife = hit.transform.GetComponent<PlayerLife>();
-                if (opponentLife != null)
+                if (opponentLife != null && !wasWallHit)
                 {
                     float damage = 0.0f;
                     float minRange, maxRange;
@@ -479,6 +483,11 @@ public class PlayerWeaponsController : NetworkBehaviour {
                     /* Apply Damage */
                     opponentLife.Cmd_applyDamage(damage, isPrecisionDamage);
                 }
+                /* Hit non-player */
+                else
+                {
+                    wasWallHit = true;
+                }
             }
         }
 
@@ -492,4 +501,19 @@ public class PlayerWeaponsController : NetworkBehaviour {
         Rpc_UpdatePlayerWeapons(1);
 
     } /* Cmd_fireWeapon */
+
+    public bool getIsEquipping()
+    {
+        return waitingForEquip;
+    }
+
+    public bool getIsReloading()
+    {
+        return waitingForReload;
+    }
+
+    public bool getIsFiring()
+    {
+        return waitingForFire;
+    }
 }

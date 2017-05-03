@@ -39,8 +39,12 @@ public class PlayerLife : NetworkBehaviour
     public Color regularDamageTextColor;
     public Color precisionDamageTextColor;
 
+    private PlayerWeapons playerWeapons;
+
     void Start()
     {
+        playerWeapons = GetComponent<PlayerWeapons>();
+
         currentHealth = maxHealth;
         isHealthDamaged = false;
         timeHealthUndamaged = float.PositiveInfinity;
@@ -166,6 +170,7 @@ public class PlayerLife : NetworkBehaviour
         if(isLocalPlayer)
         {
             transform.position = Vector3.zero;
+            playerWeapons.refillAmmunition();
         }
         currentShield = maxShield;
         currentHealth = maxHealth;
